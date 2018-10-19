@@ -19,14 +19,22 @@ namespace RaceTracker
 
         private const int timerInterval = 10;
         private Stopwatch stopWatch = new Stopwatch();
-        private DataTable data = new DataTable(); 
-
-        // test setup datatable
+        private DataTable data = new DataTable();
+        TextBox[] teamNumber;
+        TextBox[] teamName;
+        // Label[] teamSelHeaders = new Label[5];
+        int totalTeams;
         
+        
+
 
         public DefaultPage()
         {
             InitializeComponent();
+
+            // set up header labels for 
+
+
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -54,7 +62,7 @@ namespace RaceTracker
                 timer1.Start();
                 timer1.Interval = timerInterval;
                 stopWatch.Start();
-                StopButton.Visible = true;
+                StopButton.Enabled = true;
             }
         }
         
@@ -77,7 +85,87 @@ namespace RaceTracker
 
 
 
-            string[] colNames = 
+            string[] colNames = data.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
+
+
+            sb.AppendLine(string.Join(",", colNames));
+
+
+            foreach(DataRow row in data.Rows)
+            {
+                string[] fields = row.ItemArray.Select(field => field.ToString()).ToArray();
+
+                sb.AppendLine(string.Join(",", fields));
+            }
+
+            System.IO.File.WriteAllText("test.csv", sb.ToString());
+
+
+        }
+
+        private void fileSaveInit(string[] teamNames, string[] teamNumbers)
+        {
+
+        }
+
+
+        private void FileSaveTimer_Tick(object sender, EventArgs e)
+        {
+
+        }
+
+        private void SelNumTeams_Click(object sender, EventArgs e)
+        {
+
+            SelNumTeams.Enabled = false;
+
+            // initialize the team numbers and team names text boxes
+            totalTeams = Convert.ToInt32(Math.Round(numTeams.Value, 0));
+            teamNumber = new TextBox[totalTeams];
+            teamName = new TextBox[totalTeams];
+
+
+            // sets up team # label. -- MIGRATE TO BE PRESENT BY DEFAULT
+
+            Label teamNumLabel = new Label();
+            teamNumLabel.Text = "Team #";
+            teamNumLabel.Left = 12;
+            teamNumLabel.Top = 175;
+            this.Controls.Add(teamNumLabel);
+
+            for (int i = 0; i < totalTeams; i++)
+            {
+                // team number text boxes
+                teamNumber[i] = new TextBox();
+                this.Controls.Add(teamNumber[i]);
+                teamNumber[i].Font = new Font(teamNumber[i].Font.FontFamily, 14);
+                teamNumber[i].Left = 12;
+                teamNumber[i].Top = i * 30 + 200;
+                teamNumber[i].Width = 50;
+
+
+                // team name text boxes
+                teamName[i] = new TextBox();
+                this.Controls.Add(teamName[i]);
+                teamName[i].Font = new Font(teamName[i].Font.FontFamily, 14);
+                teamName[i].Left = 80;
+                teamName[i].Top = i * 30 + 200;
+
+
+                //// add and remove lap buttons
+                //teamNumber[i] = new TextBox();
+                //this.Controls.Add(teamNumber[i]);
+                //teamNumber[i].Font = new Font(teamNumber[i].Font.FontFamily, 14);
+                //teamNumber[i].Left = 12;
+                //teamNumber[i].Top = i * 30 + 200;
+
+            }
+
+        }
+
+        private void TeamSelLayout_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
