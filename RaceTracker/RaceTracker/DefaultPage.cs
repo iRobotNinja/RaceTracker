@@ -16,12 +16,13 @@ namespace RaceTracker
 {
     public partial class DefaultPage : Form
     {
-
+        private String filepath = (DateTime.Now.ToString("MM-dd-yyyy__hh-mm-ss") + "_test.csv");
         private const int timerInterval = 10;
         private Stopwatch stopWatch = new Stopwatch();
         private DataTable data = new DataTable();
         TextBox[] teamNumber;
         TextBox[] teamName;
+        Button[] addLap;
         // Label[] teamSelHeaders = new Label[5];
         int totalTeams;
         
@@ -78,18 +79,22 @@ namespace RaceTracker
             StringBuilder sb = new StringBuilder();
 
             // test setup data table
-
-            // data.Columns.Add("X");
+            //data.Columns.Add("DefTeamNumber");
+            //data.Columns.Add("DefTeamName");
+            //data.Columns.Add("AveragePitTime");
+            //data.Columns.Add("AverageLapTime");
+            //data.Columns.Add(" ");
+            //data.Columns.Add("  ");
             data.Columns.Add("TeamNumber");
-            data.Columns.Add("TeamName");
+            data.Columns.Add("LapStartTime");
 
-            for (int i = 0; i < totalTeams; i++)
-            {
-                DataRow dataRow = data.NewRow();
-                dataRow["TeamNumber"] = teamNumber[i].Text;
-                dataRow["TeamName"] = teamName[i].Text;
-                data.Rows.Add(dataRow);
-            }
+            //for (int i = 0; i < totalTeams; i++)
+            //{
+            //    DataRow dataRow = data.NewRow();
+            //    dataRow["DefTeamNumber"] = teamNumber[i].Text;
+            //    dataRow["DefTeamName"] = teamName[i].Text;
+            //    data.Rows.Add(dataRow);
+            //}
 
 
             string[] colNames = data.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
@@ -106,7 +111,7 @@ namespace RaceTracker
             }
 
 
-            System.IO.File.WriteAllText((DateTime.Now.ToString("MM-dd-yyyy__hh-mm-ss") + "_test.csv"), sb.ToString());
+            System.IO.File.WriteAllText((filepath), sb.ToString());
 
 
 
@@ -135,6 +140,7 @@ namespace RaceTracker
             totalTeams = Convert.ToInt32(Math.Round(numTeams.Value, 0));
             teamNumber = new TextBox[totalTeams];
             teamName = new TextBox[totalTeams];
+            addLap = new Button[totalTeams];
 
 
             // sets up team # label. -- MIGRATE TO BE PRESENT BY DEFAULT
@@ -165,15 +171,62 @@ namespace RaceTracker
 
 
                 //// add and remove lap buttons
-                //teamNumber[i] = new TextBox();
-                //this.Controls.Add(teamNumber[i]);
-                //teamNumber[i].Font = new Font(teamNumber[i].Font.FontFamily, 14);
-                //teamNumber[i].Left = 12;
-                //teamNumber[i].Top = i * 30 + 200;
+                addLap[i] = new Button();
+                addLap[i].Tag = i;
+                addLap[i].Text = "+1";
+                // addLap[i].Font = new Font(addLap[i].Font.FontFamily, 14);
+                addLap[i].Left = 200;
+                addLap[i].Top = i * 30 + 200;
+
+                //addLap[i].Click += (sender2, ex) => this.Display(i);
+                addLap[i].Click += new System.EventHandler(addLapButtonClicked);
+                this.Controls.Add(addLap[i]);
 
             }
 
         }
+
+        public void Display(int i)
+        {
+            MessageBox.Show("Button No " + i);
+        }
+
+        public void addLapButtonClicked(object sender, System.EventArgs e)
+        {
+            Button btn = (Button)sender;
+            MessageBox.Show("Button " + btn.Tag + " Pressed");
+
+            addLapToFile(Convert.ToInt32(btn.Tag.ToString()));
+        }
+
+        public void addLapToFile(int teamNumIndex)
+        {
+
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < totalTeams; i++)
+            {
+                DataRow dataRow = data.NewRow();
+                dataRow["TeamNumber"] = teamNumber[teamNumIndex].Text;
+                dataRow["LapStartTime"] = RaceTime.Text;
+                data.Rows.Add(dataRow);
+            }
+
+            string[] colNames = data.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
+
+
+            sb.AppendLine(string.Join(",", colNames));
+            foreach (DataRow row in data.Rows)
+            {
+                string[] fields = row.ItemArray.Select(field => field.ToString()).ToArray();
+
+                sb.AppendLine(string.Join(",", fields));
+            }
+
+
+            System.IO.File.WriteAllText((filepath), sb.ToString());
+        }
+
 
         private void TeamSelLayout_Paint(object sender, PaintEventArgs e)
         {
