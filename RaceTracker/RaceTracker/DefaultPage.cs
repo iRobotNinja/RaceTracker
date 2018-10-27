@@ -79,10 +79,17 @@ namespace RaceTracker
 
             // test setup data table
 
+            // data.Columns.Add("X");
+            data.Columns.Add("TeamNumber");
+            data.Columns.Add("TeamName");
 
-            data.Columns.Add("column1");
-            data.Rows.Add("row1");
-
+            for (int i = 0; i < totalTeams; i++)
+            {
+                DataRow dataRow = data.NewRow();
+                dataRow["TeamNumber"] = teamNumber[i].Text;
+                dataRow["TeamName"] = teamName[i].Text;
+                data.Rows.Add(dataRow);
+            }
 
 
             string[] colNames = data.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
@@ -98,10 +105,15 @@ namespace RaceTracker
                 sb.AppendLine(string.Join(",", fields));
             }
 
-            System.IO.File.WriteAllText("test.csv", sb.ToString());
+
+            System.IO.File.WriteAllText((DateTime.Now.ToString("MM-dd-yyyy__hh-mm-ss") + "_test.csv"), sb.ToString());
 
 
+
+            debugSave.Enabled = false;
         }
+
+
 
         private void fileSaveInit(string[] teamNames, string[] teamNumbers)
         {
