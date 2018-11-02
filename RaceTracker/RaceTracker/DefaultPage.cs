@@ -16,14 +16,24 @@ namespace RaceTracker
 {
     public partial class DefaultPage : Form
     {
+
+        /**
+         * In the file:
+         *      'L' = Lap
+         *      'R' = Remove Lap
+         *      'T' = Time Event - File auto save
+         *      'P' = Pit Start
+         * 
+         **/
         private String filepath = (DateTime.Now.ToString("MM-dd-yyyy__hh-mm-ss") + "_test.csv");
         private const int timerInterval = 10;
+        private const int FileTimerInverval = 5 * 1000; // Seconds * milis
         private Stopwatch stopWatch = new Stopwatch();
         private DataTable data = new DataTable();
         TextBox[] teamNumber;
         TextBox[] teamName;
         Button[] addLap;
-        // Label[] teamSelHeaders = new Label[5];
+        Button[] removeLap;
         int totalTeams;
         
         
@@ -32,10 +42,9 @@ namespace RaceTracker
         public DefaultPage()
         {
             InitializeComponent();
-
-            // set up header labels for 
-
-
+            data.Columns.Add("TeamNumber");
+            data.Columns.Add("Event");
+            data.Columns.Add("Time");
         }
 
         private void timer1_Tick(object sender, EventArgs e)
@@ -46,7 +55,7 @@ namespace RaceTracker
                 stopWatch.Elapsed.Seconds, 
                 stopWatch.Elapsed.Milliseconds);
 
-            RaceTime.Text = String.Format("{0}:{1:D2}:{2:D2}:{3:D2}",
+            RaceTimeRemain.Text = String.Format("{0}:{1:D2}:{2:D2}:{3:D2}",
                 (int)stopWatch.Elapsed.TotalHours,
                 stopWatch.Elapsed.Minutes,
                 stopWatch.Elapsed.Seconds,
@@ -64,14 +73,19 @@ namespace RaceTracker
                 timer1.Interval = timerInterval;
                 stopWatch.Start();
                 StopButton.Enabled = true;
+
+                FileSaveTimer.Start();
+                FileSaveTimer.Interval = FileTimerInverval;
             }
         }
         
         // stop button
         private void StopButton_Click(object sender, EventArgs e)
         {
-            if(stopWatch.IsRunning)
+            if (stopWatch.IsRunning)
+            {
                 stopWatch.Stop();
+            }
         }
 
         private void debugSave_Click(object sender, EventArgs e)
@@ -86,15 +100,8 @@ namespace RaceTracker
             //data.Columns.Add(" ");
             //data.Columns.Add("  ");
             data.Columns.Add("TeamNumber");
-            data.Columns.Add("LapStartTime");
-
-            //for (int i = 0; i < totalTeams; i++)
-            //{
-            //    DataRow dataRow = data.NewRow();
-            //    dataRow["DefTeamNumber"] = teamNumber[i].Text;
-            //    dataRow["DefTeamName"] = teamName[i].Text;
-            //    data.Rows.Add(dataRow);
-            //}
+            data.Columns.Add("Event");
+            data.Columns.Add("Time");
 
 
             string[] colNames = data.Columns.Cast<DataColumn>().Select(column => column.ColumnName).ToArray();
@@ -128,7 +135,7 @@ namespace RaceTracker
 
         private void FileSaveTimer_Tick(object sender, EventArgs e)
         {
-
+            writeTimeEvent(-1, 'T');
         }
 
         private void SelNumTeams_Click(object sender, EventArgs e)
@@ -141,6 +148,8 @@ namespace RaceTracker
             teamNumber = new TextBox[totalTeams];
             teamName = new TextBox[totalTeams];
             addLap = new Button[totalTeams];
+            removeLap = new Button[totalTeams];
+            
 
 
             // sets up team # label. -- MIGRATE TO BE PRESENT BY DEFAULT
@@ -155,7 +164,7 @@ namespace RaceTracker
             {
                 // team number text boxes
                 teamNumber[i] = new TextBox();
-                this.Controls.Add(teamNumber[i]);
+                Cars.Controls.Add(teamNumber[i]);
                 teamNumber[i].Font = new Font(teamNumber[i].Font.FontFamily, 14);
                 teamNumber[i].Left = 12;
                 teamNumber[i].Top = i * 30 + 200;
@@ -164,31 +173,34 @@ namespace RaceTracker
 
                 // team name text boxes
                 teamName[i] = new TextBox();
-                this.Controls.Add(teamName[i]);
+                Cars.Controls.Add(teamName[i]);
                 teamName[i].Font = new Font(teamName[i].Font.FontFamily, 14);
                 teamName[i].Left = 80;
                 teamName[i].Top = i * 30 + 200;
 
 
-                //// add and remove lap buttons
+                // add lap buttons
                 addLap[i] = new Button();
                 addLap[i].Tag = i;
-                addLap[i].Text = "+1";
-                // addLap[i].Font = new Font(addLap[i].Font.FontFamily, 14);
+                addLap[i].Text = "Add Lap";
                 addLap[i].Left = 200;
                 addLap[i].Top = i * 30 + 200;
 
-                //addLap[i].Click += (sender2, ex) => this.Display(i);
                 addLap[i].Click += new System.EventHandler(addLapButtonClicked);
-                this.Controls.Add(addLap[i]);
+                Cars.Controls.Add(addLap[i]);
+
+                // add lap buttons
+                addLap[i] = new Button();
+                addLap[i].Tag = i;
+                addLap[i].Text = "Remove Lap";
+                addLap[i].Left = 300;
+                addLap[i].Top = i * 30 + 200;
+
+                addLap[i].Click += new System.EventHandler(removeLapButtonClicked);
+                Cars.Controls.Add(addLap[i]);
 
             }
 
-        }
-
-        public void Display(int i)
-        {
-            MessageBox.Show("Button No " + i);
         }
 
         public void addLapButtonClicked(object sender, System.EventArgs e)
@@ -196,19 +208,27 @@ namespace RaceTracker
             Button btn = (Button)sender;
             MessageBox.Show("Button " + btn.Tag + " Pressed");
 
-            addLapToFile(Convert.ToInt32(btn.Tag.ToString()));
+            writeTimeEvent(Convert.ToInt32(btn.Tag.ToString()), 'L');
         }
 
-        public void addLapToFile(int teamNumIndex)
+        public void removeLapButtonClicked(object sender, System.EventArgs e)
         {
+            Button btn = (Button)sender;
+            MessageBox.Show("Button " + btn.Tag + " Pressed");
 
+            writeTimeEvent(Convert.ToInt32(btn.Tag.ToString()), 'R');
+        }
+
+        public void writeTimeEvent(int teamNumIndex, Char theEvent)
+        {
             StringBuilder sb = new StringBuilder();
 
             for (int i = 0; i < totalTeams; i++)
             {
                 DataRow dataRow = data.NewRow();
-                dataRow["TeamNumber"] = teamNumber[teamNumIndex].Text;
-                dataRow["LapStartTime"] = RaceTime.Text;
+                dataRow["TeamNumber"] = (teamNumIndex != -1) ? teamNumber[teamNumIndex].Text : (-1).ToString();
+                dataRow["Event"] = theEvent; // Remove Lap
+                dataRow["Time"] = RaceTime.Text;
                 data.Rows.Add(dataRow);
             }
 
@@ -223,14 +243,18 @@ namespace RaceTracker
                 sb.AppendLine(string.Join(",", fields));
             }
 
-
             System.IO.File.WriteAllText((filepath), sb.ToString());
         }
-
 
         private void TeamSelLayout_Paint(object sender, PaintEventArgs e)
         {
 
+        }
+
+        private void openLapData_Click(object sender, EventArgs e)
+        {
+            LapDataPage lapData = new LapDataPage();
+            lapData.Show();
         }
     }
 }
